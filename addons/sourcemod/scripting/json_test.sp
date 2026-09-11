@@ -575,6 +575,36 @@ void it_should_pretty_print()
     Test_AssertStringsEqual("output", json_encode_output, "{ \"pretty_printing\": true, \"first_depth\": { \"im_indented\": null, \"second_depth\": [ 1, [] ] } }");
 }
 
+void it_should_pretty_print_deeply_nested_objects()
+{
+    // it_should_pretty_print leaves these modified
+    strcopy(JSON_PP_AFTER_COLON, sizeof(JSON_PP_AFTER_COLON), " ");
+    strcopy(JSON_PP_INDENT, sizeof(JSON_PP_INDENT), "    ");
+    strcopy(JSON_PP_NEWLINE, sizeof(JSON_PP_NEWLINE), "\n");
+
+    JSON_Array numbers = new JSON_Array();
+    numbers.PushInt(1);
+    numbers.PushInt(2);
+
+    JSON_Object level3 = new JSON_Object();
+    level3.SetString("deepest", "value");
+    level3.SetObject("numbers", numbers);
+
+    JSON_Object level2 = new JSON_Object();
+    level2.SetObject("level3", level3);
+
+    JSON_Object level1 = new JSON_Object();
+    level1.SetObject("level2", level2);
+
+    JSON_Object root = new JSON_Object();
+    root.SetObject("level1", level1);
+
+    _json_encode(root, JSON_ENCODE_PRETTY);
+    json_cleanup_and_delete(root);
+
+    Test_AssertStringsEqual("output", json_encode_output, "{\n    \"level1\": {\n        \"level2\": {\n            \"level3\": {\n                \"deepest\": \"value\",\n                \"numbers\": [\n                    1,\n                    2\n                ]\n            }\n        }\n    }\n}");
+}
+
 void it_should_trim_floats()
 {
     JSON_Array arr = new JSON_Array();
@@ -1320,6 +1350,7 @@ public void OnPluginStart()
     }
 
     Test_Run("it_should_pretty_print", it_should_pretty_print);
+    Test_Run("it_should_pretty_print_deeply_nested_objects", it_should_pretty_print_deeply_nested_objects);
     Test_Run("it_should_trim_floats", it_should_trim_floats);
     Test_Run("it_should_remove_meta_keys_from_arrays", it_should_remove_meta_keys_from_arrays);
     Test_Run("it_should_remove_meta_keys_from_objects", it_should_remove_meta_keys_from_objects);
